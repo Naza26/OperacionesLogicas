@@ -6,24 +6,31 @@ extern fopen
 extern fclose
 extern fread
 extern fgets
+extern sscanf
 
 section .data
 
-    msjPantalla             db  "%c",10,0
     nombreArchivo           db  "prueba_asm.txt",0
     modo                    db  "r",0
+	idArchivo               dq  0
     msjAperturaOk           db  "El archivo pudo ser abierto",10,0
     msjErrorApertura        db  "Error en la apertura del archivo",10,0
     msjLecturaIniciada      db  "Leyendo archivo...",10,0
     msjLecturaFinalizada    db  "Se termino de leer el archivo",10,0
-    msjoperInicial		    db  "Ingrese un operando inicial",0
-    msjOpAND                db  "Procesando operacion AND...",10,0
-    msjOpXOR                db  "Procesando operacion XOR...",10,0
-    msjOpOR                 db  "Procesando operacion OR...",10,0
-    idArchivo               dq  0
-    opAND                   db  "A",0
-    opXOR                   db  "X",0
-    opOR                    db  "O",0
+    
+    msjoperInicial          db  "Ingrese un operando inicial",0
+    msjOpAND                db  "Procesando operacion AND...",0
+    msjOpXOR                db  "Procesando operacion XOR...",0
+    msjOpOR                 db  "Procesando operacion OR...",0
+    aux						db	"La primer operacion es: %c",10,0
+    
+    ;resParcialStr	 		db '****************',0
+	;resParcialFormat	    db '%hi',0	;16 bits (word)
+	;resParcialNum			dw	0		;16 bits (word)
+	
+	msjParcialAux			db	"El resul parcial es: %hi",10,0
+	msjOperaciones			db	"%hi %c %hi",10,0
+	msjFinal				db	"El resultado final es: %hi",10,0
 
     regLogicos      times 0 db "" ; longitud total del registro: 19 (bytes)
         operando    times 16 db " "
@@ -37,47 +44,102 @@ section .bss
 
 section .text
 main:
-    call    abrirArchivo ; tengo que abrir el archivo
-    call    leerArchivo ; tengo que leer el archivo
-    mov     rdi,    msjoperInicial
-    call    puts
-    mov     rdi,    operInicial
-    call    gets
-    mov     rax,    operInicial ; Muevo el operando al rax
-    ; tengo que quedarme con la operacion correspondiente y hacer un jump hacia cada etiqueta
-    cmp     rax,    opAND
-    jle     operacionAND ;rcx igual a cero, significa que son iguales entonces bifurco
-    cmp     rax,    opXOR
-    jle     operacionXOR
-    cmp     rax,    opOR
-    jle     operacionOR
-    call    mostrarResulParcial ; luego tengo que imprimir el resultado parcial por pantalla
-	ret
-	
-    operacionAND:
-	    mov     rdi,    msjOpAND
-		call    puts
-        AND     rax,    operando ; Aplico la operacion al operando (tengo que cargar dos operandos y hacerlo entre ellos)
-        mov     [resParcial], rax ; Como aplicar la operacion me lo guarda en el rax, me guardo el resul en resParcial
-    operacionXOR:
-    	mov     rdi,    msjOpXOR
-		call    puts
-        XOR     rax,    operando ; Aplico la operacion al operando (tengo que cargar dos operandos y hacerlo entre ellos)
-        mov     [resParcial],   rax ; Como aplicar la operacion me lo guarda en el rax, me guardo el resul en resParcial
-    operacionOR:
-    	mov     rdi,    msjOpOR
-		call    puts
-        OR      rax,    operando ; Aplico la operacion al operando (tengo que cargar dos operandos y hacerlo entre ellos)
-        mov     [resParcial],   rax ; Como aplicar la operacion me lo guarda en el rax, me guardo el resul en resParcial
+    call    abrirArchivo ; abro archivo
+    call    leerArchivo ; leo archivo
+    mov     rdi,    aux ; muestro primer operacion (debugging)
+    mov		rsi,	[operacion]
+    sub     rax,    rax
 
-    mostrarResulParcial: ; muestro resultado parcial por pantalla
-        mov     rdi,    msjPantalla
-        mov     rsi,    resParcial
+    call printf
+    
+    mov     rdi,    msjoperInicial ; pido operando inicial
+    call    puts
+    mov     rsi,    operInicial 
+    call    gets
+
+    mov     rax,    rsi 
+    mov     [resParcial],   rax ; me guardo operando inicial en resParcial
+    
+    ; tengo que quedarme con la operacion correspondiente y hacer un jump hacia cada etiqueta
+    
+    cmp     byte[operacion],	"A" ; comparo para ver si la operacion es AND por ejemplo
+    jz      operacionAND ; jz = 0 entonces significa que son iguales y bifurco
+    cmp     byte[operacion],    "X"
+    jz      operacionXOR
+    cmp     byte[operacion],    "O"
+    jz      operacionOR
+    call    mostrarResulFinal ; imprimo resultado final por pantalla
+    ret
+	
+    operacionAND:		
+		mov		rdi,	msjOperaciones ; muestro que operandos se van a operar
+		mov		rsi,	[resParcial]
+		mov		rdx,	"A"
+		mov		rcx,	[operando]
+		sub		rax,	rax
+		call	printf
+		
+		mov     rdi,    msjOpAND ; mensaje de debugg
+		call    puts
+		
+		mov		rax,	[operando]
+        AND     rax,    [resParcial] ; Aplico la operacion sobre 2 operandos
+        
+        mov		rdi,	msjParcialAux ; muestro mensaje de operacion parcial
+        mov		rsi,	rax
+        
+        sub		rax,rax
+        
+        call	printf
+        
+    operacionXOR:		
+		mov		rdi,	msjOperaciones
+		mov		rsi,	[resParcial]
+		mov		rdx,	"X"
+		mov		rcx,	[operando]
+		sub		rax,	rax
+		call	printf
+		
+		mov     rdi,    msjOpXOR
+		call    puts
+		
+		mov		rax,	[operando]
+        XOR     rax,    [resParcial]
+        mov		rdi,	msjParcialAux
+        mov		rsi,	rax
+        
+        sub		rax,rax
+        
+        call	printf
+        
+    operacionOR:		
+		mov		rdi,	msjOperaciones
+		mov		rsi,	[resParcial]
+		mov		rdx,	"O"
+		mov		rcx,	[operando]
+		sub		rax,	rax
+		call	printf
+		
+		mov     rdi,    msjOpOR
+		call    puts
+		
+		mov		rax,	[operando]
+        OR      rax,    [resParcial]
+        mov		rdi,	msjParcialAux
+        mov		rsi,	rax
+        
+        sub		rax,rax
+        
+        call	printf
+
+    mostrarResulFinal:
+        mov     rdi,    msjFinal ; muestro mensaje final
+		mov		rsi,	rax
 
         sub     rax,    rax
 
         call printf
-
+        
     abrirArchivo: ;abre el archivo especificado en archivoNombre, en el modo especificado y retorna un id de archivo o un codigo de error (valor negativo)
 
         mov     rdi,    nombreArchivo
@@ -93,7 +155,7 @@ main:
 
 
     leerArchivo:
-		mov     rdi,    msjLecturaIniciada ; hago un print para seguimiento
+	    mov     rdi,    msjLecturaIniciada ; hago un print para seguimiento
         call    puts
         mov     rdi,    regLogicos ; muevo el bloque de registros
         mov     rsi,    19
@@ -113,17 +175,17 @@ main:
     errorApertura:
         mov     rdi,    msjErrorApertura
         call    puts
-        jmp     finPgm
+        jmp     finPgm ; bifurco a fin de programa
 
     msjAperturaOkey:
 
-    mov     rdi,    msjAperturaOk
-    call    puts
-    ret
+        mov     rdi,    msjAperturaOk ; mensaje debugging
+        call    puts
+        ret
 
     cerrarArchivo:
 
-        mov     rdi,    [idArchivo]
+        mov     rdi,    [idArchivo] ; cierro el archivo
         call    fclose
 
     finPgm:
