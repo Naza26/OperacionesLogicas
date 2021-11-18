@@ -206,21 +206,21 @@ main:
             cmp byte[resParcial + rbx], '1' ; rbx persiste de la etiqueta anterior? porque necesito recorrer el resultado parcial tambien byte a byte
             je  operEs1 ; oper inicial es 1
             cmp word[operEs1], 'S'
-            je  agregoCeroBinario ; A AND B = 1 SII A = 1 Y B = 1
+            je  agregoCeroBinario ; A XOR B = 1 SII A = 1 Y B = 1
             call agregoUnoBinario ; Si ambos opers no son 1, entonces agrego 1
         insertoNuevoByteXORCero:
             mov  word[es0], "N"
             cmp byte[resParcial + rbx], '0' ; rbx persiste de la etiqueta anterior? porque necesito recorrer el resultado parcial tambien byte a byte
             je  operEs0 ; oper inicial es 1
             cmp word[operEs0], 'S'
-            je  agregoCeroBinario ; A AND B = 0 SII A = 0 Y B = 0
+            je  agregoCeroBinario ; A XOR B = 0 SII A = 0 Y B = 0
             call agregoUnoBinario ; Si ambos opers no son 0, entonces agrego 1
 
     agregoCeroBinario:
         ; Tengo que agregar en la pos correspondiente de mi cadena de bytes el nuevo byte agregado
     agregoUnoBinario:
         ; Tengo que agregar en la pos correspondiente de mi cadena de bytes el nuevo byte agregado
-        
+
     errorApertura:
         mov     rdi, msjErrorApertura
         call    puts
