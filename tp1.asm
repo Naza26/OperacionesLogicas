@@ -30,211 +30,306 @@ section .data
 	msjFinal				db	"El resultado final es: %hi",10,0
 	
     ; Registro
-    regLogicos      times 0 db "" ; longitud total del registro: 17 (bytes)
+    regLogicos      times 0 db ""
         operando    times 16 db " "
         operacion   times 1 db " "
 
+    ; Variable auxiliar para guardar resultado parcial
+    resParcial  times 16 db "0000000000000000"
+
+    msjContador     db  "El contador es: %hhi",10,0
+
+    msjAux  db "Resultado inicial cargado: %hi",10,0
+
 section .bss
     operInicial     resb    16
-    resParcial      resb    16
     esValido        resb    1
     es1             resb    1
     es0             resb    1
-    resAux          resb    1
-
+    contador        resb    1
 section .text
 main:
+    call    procesarArchivo
     call    abrirArchivo ; Abro archivo y manejo excepciones
     call    leerArchivo ; Leo archivo y manejo excepciones
-    call    procesarArchivo
+    call    mostrarResulFinal ; muestro resultado final
 
-    abrirArchivo: ; Abre el archivo especificado en archivoNombre, en el modo especificado y retorna un id de archivo o un codigo de error (valor negativo)
+    abrirArchivo:
 
         mov     rdi, nombreArchivo
         mov     rsi, modo
         call    fopen
 
         cmp     rax, 0
-        jle     errorApertura ; manejo error de apertura
-        mov     qword[idArchivo], rax ; abro efectivamente el archivo
-        jle     msjErrorApertura
-        call    msjAperturaOkey ; si no me fui a la etiqueta, el archivo se abrio bien
+        jle     errorApertura
+        mov     qword[idArchivo], rax
+        call    msjAperturaOkey
         ret
 
     leerArchivo:
-            mov     rdi, msjLecturaIniciada ; hago un print para seguimiento
+            mov     rdi, msjLecturaIniciada
             call    puts
         leerRegistros:
-            mov     rdi, regLogicos ; muevo el bloque de registros
+            mov     rdi, regLogicos
             mov     rsi, 17
             mov     rdx, 1
             mov     rcx, [idArchivo]
-            call    fread ; leo efectivamente el archivo (antes tenia fread)
-            cmp     rax, 0 ; me fijo si llegue al fin de linea
-            jle     cerrarArchivo ; cierro el archivo
-            call    VALREG
+            call    fread
+            cmp     rax, 0
+            jle     cerrarArchivo
+            ; call    VALREG
+            ; cmp     byte[esValido], 'F'
+            ; je      mostrarInvalido
+            call    aplicoOperacionLogica
             jmp     leerRegistros
-            mov     rdi, msjLecturaFinalizada ; hago un print para seguimiento
+            mov     rdi, msjLecturaFinalizada
             call    puts
             ret
 
-    VALREG:
-        call operandoValido
-        call operacionValida
-        ret
+    aplicoOperacionLogica:
+        mov byte[contador], 0
+        cmp byte[operacion], 'N'
+        je operacionAND
+        cmp byte[operacion], 'O'
+        je operacionOR
+        cmp byte[operacion], 'X'
+        je operacionXOR
 
-    operandoValido:
-        mov rbx, 0
-        recorrerCadenaOperando:
-            cmp byte[operando + rbx], 0
-            je  validarTamanio
-            inc rbx
-            jmp recorrerCadenaOperando
-        validarTamanio:
-            cmp rsi, 16
-            je  validarFormato
-            jmp setearInvalido
-        validarFormato:
-            mov rbx, 0
-            sigDigitoOperando:
-                cmp byte[operando + rbx], '1'
-                jne setearInvalido
-                cmp byte[operando + rbx], '0'
-                jne setearInvalido
-                inc rbx
-                loop sigDigitoOperando
-                mov word[esValido], "V"
+    ; VALREG:
+    ;     call operandoValido
+    ;     call operacionValida
 
-    operacionValida:
-        mov rbx, 0
-        recorrerCadenaOperacion:
-            cmp byte[operacion + rbx], 0
-            je  validarTamanioOp
-            inc rbx
-            jmp recorrerCadenaOperacion
-        validarTamanioOp:
-            cmp rsi, 1
-            je  validarFormatoOp
-            jmp setearInvalido
-        validarFormatoOp:
-            mov rbx, 0
-            sigDigitoOperacion:
-                cmp byte[operacion + rbx], 'N'
-                jne setearInvalido
-                cmp byte[operacion + rbx], 'O'
-                jne setearInvalido
-                cmp byte[operacion + rbx], 'X'
-                jne setearInvalido
-                inc rbx
-                loop sigDigitoOperacion
-                mov word[esValido], "V"
+    ; operandoValido:
+    ;     mov rsi, 0
+    ;     recorrerCadenaOperando:
+    ;         cmp byte[operando + rsi], 0
+    ;         je  validarTamanio
+    ;         inc rsi
+    ;         jmp recorrerCadenaOperando
+    ; validarTamanio:
+    ;     cmp rsi, 16
+    ;     je  validarFormato
+    ;     jmp setearInvalido
+    ; validarFormato:
+    ;     mov rsi, 0
+    ;     compararOperando:
+    ;         cmp byte[operando + rsi], '1'
+    ;         je operandValido
+    ;         cmp byte[operando + rsi], '0'
+    ;         je operandValido
+    ;         jmp setearInvalido
+    ;     operandValido:
+    ;         cmp rsi, 15
+    ;         je  setearValido
+    ;         inc rsi,
+    ;         jmp compararOperando
+
+    ; operacionValida:
+    ;     mov rsi, 0
+    ;     recorrerCadenaOperacion:
+    ;         cmp byte[operacion + rsi], 0
+    ;         je  validarTamanioOp
+    ;         inc rsi
+    ;         jmp recorrerCadenaOperacion
+    ; validarTamanioOp:
+    ;     cmp rsi, 1
+    ;     je  validarFormatoOp
+    ;     jmp setearInvalido
+    ; validarFormatoOp:
+    ;     mov rsi, 0
+    ;     compararOperacion:
+    ;         cmp byte[operacion + rsi], 'N'
+    ;         je operacValida
+    ;         cmp byte[operacion + rsi], 'O'
+    ;         je operacValida
+    ;         cmp byte[operacion + rsi], 'X'
+    ;         je operacValida
+    ;         jmp setearInvalido
+
+    ;     operacValida:
+    ;         cmp rsi, 0
+    ;         je  setearValido
+    ;         inc rsi,
+    ;         jmp compararOperacion
             
     mostrarInvalido:
             mov     rdi, msjErrorValidacion
             call    puts
     setearInvalido:
-	        mov     word[esValido], "F" ; Devuelve F en la variable esValido si es un registro invalido
+	        mov     byte[esValido], 'F'
             jmp     finPgm
     setearValido:
-	    mov  word[esValido], "V" ; Devuelve V en la variable esValido si es un registro valido
+	    mov  byte[esValido], 'V'
 
     procesarArchivo:
        pidoOperInicial:
-            mov     rdi, msjoperInicial ; pido operando inicial
+            mov     rdi, msjoperInicial
             call    puts
             mov     rsi, operInicial
             call    gets
 
-            mov     rax, rsi 
-            mov     [resParcial], rax ; me guardo operando inicial en resParcial
+            mov [resParcial], rsi
+            mov rdi, msjAux
+            mov rsi, [resParcial]
+            sub rax, rax
+            call printf
 
     operEs1:
-        mov  word[es1], "S"
+        mov  byte[es1], 'S'
+        ret
     operEs0:
-        mov  word[es0], "S"
+        mov  byte[es0], 'S'
+        ret
 
     operacionAND:
-        mov rbx, 0
+        mov rdi, msjOpAND
+        call puts
+        mov rdi, msjOperaciones
+        mov rsi, [resParcial]
+        mov rdx, [operacion]
+        mov rcx, [operando]
+        sub rax, rax
+        call printf
         recorroCadenaAND:
+            mov rbx, [contador]
+            mov rcx, 16
             sigOperandoAND:
-            cmp byte[operando + rbx], '1' ; oper de archivo es 1
-            je insertoNuevoByteAND
-            cmp byte[operando + rbx], '0' ; oper de archivo es 0
-            je agregoCeroBinario
-            inc rbx
-            loop sigOperandoAND
+                cmp byte[operando + rbx], '1' ; oper de archivo es 1
+                je insertoNuevoByteAND
+                cmp byte[operando + rbx], '0' ; oper de archivo es 0
+                je agregoCeroBinario
+                inc byte[contador]
+                mov rdi, msjContador
+                mov rsi, [contador]
+                sub rax, rax
+                call printf
+                loop sigOperandoAND
+            ;call mostrarResulParcial
+
         insertoNuevoByteAND:
-            mov  word[es1], "N"
-            cmp byte[resParcial + rbx], '1' ; rbx persiste de la etiqueta anterior? porque necesito recorrer el resultado parcial tambien byte a byte
+            mov  byte[es1], 'N'
+            mov  rcx, [contador]
+            cmp byte[resParcial + rcx], '1' ; rbx persiste de la etiqueta anterior? porque necesito recorrer el resultado parcial tambien byte a byte
             je  operEs1 ; oper inicial es 1
-            cmp word[operEs1], 'S'
+            cmp byte[es1], 'S'
             je  agregoUnoBinario ; A AND B = 1 SII A = 1 Y B = 1
             call agregoCeroBinario ; Si ambos opers no son 1, entonces agrego 0
 
-
     operacionOR:
-        mov rbx, 0
+        mov rdi, msjOpOR
+        call puts
+        mov rdi, msjOperaciones
+        mov rsi, [resParcial]
+        mov rdx, [operacion]
+        mov rcx, [operando]
+        sub rax, rax
+        call printf
         recorroCadenaOR:
+            mov rbx, [contador]
+            mov rcx, 16    
             sigOperandoOR:
-            cmp byte[operando + rbx], '1' ; oper de archivo es 1
-            je insertoNuevoByteOR
-            cmp byte[operando + rbx], '0' ; oper de archivo es 0
-            je agregoUnoBinario
-            inc rbx
-            loop sigOperandoOR
+                cmp byte[operando + rbx], '1' ; oper de archivo es 1
+                je insertoNuevoByteOR
+                cmp byte[operando + rbx], '0' ; oper de archivo es 0
+                je agregoUnoBinario
+                inc byte[contador]
+                mov rdi, msjContador
+                mov rsi, [contador]
+                sub rax, rax
+                call printf
+                loop sigOperandoOR
+            ;call mostrarResulParcial
+
         insertoNuevoByteOR:
-            mov  word[es0], "N"
-            cmp byte[resParcial + rbx], '0' ; rbx persiste de la etiqueta anterior? porque necesito recorrer el resultado parcial tambien byte a byte
+            mov byte[es0], 'N'
+            mov rcx, [contador]
+            cmp byte[resParcial + rcx], '0' ; rbx persiste de la etiqueta anterior? porque necesito recorrer el resultado parcial tambien byte a byte
             je  operEs0 ; oper inicial es 0
-            cmp word[operEs0], 'S'
+            cmp byte[es0], 'S'
             je  agregoCeroBinario ; A OR B = 0 SII A = 0 Y B = 0
             call agregoUnoBinario ; Si ambos opers no son 0, entonces agrego 1
     
-    
     operacionXOR:
-        mov rbx, 0
+        mov rdi, msjOpXOR
+        call puts
+        mov rdi, msjOperaciones
+        mov rsi, [resParcial]
+        mov rdx, [operacion]
+        mov rcx, [operando]
+        sub rax, rax
+        call printf
         recorroCadenaXOR:
+            mov rbx, [contador]
+            mov rcx, 16
             sigOperandoXOR:
-            cmp byte[operando + rbx], '1' ; oper de archivo es 1
-            je insertoNuevoByteXORUno
-            cmp byte[operando + rbx], '0' ; oper de archivo es 0
-            je insertoNuevoByteXORCero
-            inc rbx
-            loop sigOperandoXOR
+                cmp byte[operando + rbx], '1' ; oper de archivo es 1
+                je insertoNuevoByteXORUno
+                cmp byte[operando + rbx], '0' ; oper de archivo es 0
+                je insertoNuevoByteXORCero
+                inc byte[contador]
+                mov rdi, msjContador
+                mov rsi, [contador]
+                sub rax, rax
+                call printf
+                loop sigOperandoXOR
+            ;call mostrarResulParcial
+
         insertoNuevoByteXORUno:
-            mov  word[es1], "N"
-            cmp byte[resParcial + rbx], '1' ; rbx persiste de la etiqueta anterior? porque necesito recorrer el resultado parcial tambien byte a byte
+            mov byte[es1], 'N'
+            mov rcx, [contador]
+            cmp byte[resParcial + rcx], '1' ; rbx persiste de la etiqueta anterior? porque necesito recorrer el resultado parcial tambien byte a byte
             je  operEs1 ; oper inicial es 1
-            cmp word[operEs1], 'S'
-            je  agregoCeroBinario ; A XOR B = 1 SII A = 1 Y B = 1
+            cmp byte[es1], 'S'
+            je  agregoCeroBinario ; A AND B = 1 SII A = 1 Y B = 1
             call agregoUnoBinario ; Si ambos opers no son 1, entonces agrego 1
+            
+
         insertoNuevoByteXORCero:
-            mov  word[es0], "N"
-            cmp byte[resParcial + rbx], '0' ; rbx persiste de la etiqueta anterior? porque necesito recorrer el resultado parcial tambien byte a byte
+            mov byte[es0], 'N'
+            mov rcx, [contador]
+            cmp byte[resParcial + rcx], '0' ; rbx persiste de la etiqueta anterior? porque necesito recorrer el resultado parcial tambien byte a byte
             je  operEs0 ; oper inicial es 1
-            cmp word[operEs0], 'S'
-            je  agregoCeroBinario ; A XOR B = 0 SII A = 0 Y B = 0
+            cmp byte[es0], 'S'
+            je  agregoCeroBinario ; A AND B = 0 SII A = 0 Y B = 0
             call agregoUnoBinario ; Si ambos opers no son 0, entonces agrego 1
+            
 
     agregoCeroBinario:
-        ; Tengo que agregar en la pos correspondiente de mi cadena de bytes el nuevo byte agregado
+        mov rbx, [contador]
+        mov byte[resParcial + rbx], '0'
+
     agregoUnoBinario:
-        ; Tengo que agregar en la pos correspondiente de mi cadena de bytes el nuevo byte agregado
+        mov rbx, [contador]
+        mov byte[resParcial + rbx], '1'
+        
+
+    mostrarResulParcial:
+        mov     rdi, msjParcial
+        mov     rsi, [resParcial]
+        sub     rax, rax
+        call    printf
+
+    mostrarResulFinal:
+        mov     rdi, msjFinal
+        mov     rsi, [resParcial]
+        sub     rax, rax
+        call    printf
+        ret
 
     errorApertura:
         mov     rdi, msjErrorApertura
         call    puts
-        jmp     finPgm ; bifurco a fin de programa
+        jmp     finPgm
 
     msjAperturaOkey:
 
-        mov     rdi, msjAperturaOk ; mensaje debugging
+        mov     rdi, msjAperturaOk
         call    puts
         ret
 
     cerrarArchivo:
 
-        mov     rdi, [idArchivo] ; cierro el archivo
+        mov     rdi, [idArchivo]
         call    fclose
 
     finPgm:
