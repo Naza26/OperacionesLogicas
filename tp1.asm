@@ -70,7 +70,7 @@ section .text
 main:
     call    procesarArchivo
     call    abrirArchivo
-    call    leerArchivo
+    jmp    leerArchivo
 
     finPgm:
 	    ret
@@ -118,12 +118,12 @@ main:
             mov     rdi, msjFinValidacion
             call    puts
             call    aplicoOperacionLogica
-            call    mostrarResulParcial
+            jmp     mostrarResulParcial
             siguienteRegistro:
             jmp     leerRegistros
             mov     rdi, msjLecturaFinalizada
             call    puts
-            ret
+            jmp     finPgm
 
     procesarArchivo: ; Pido operando inicial para empezar a ejecutar la logica del programa
        pidoOperInicial:
@@ -137,9 +137,10 @@ main:
 
 aplicoOperacionLogica: ; Inicializo mi indice con el cual me voy a mover entre las cadenas de operando (vectores)y me dirijo a la operacion correspondiente
         mov byte[indice], 0
-        mov byte[indice], 0
         cmp byte[operacion], 'N'
         je operacionAND
+        mov rdi, msjLecturaFinalizada
+        call puts
         cmp byte[operacion], 'O'
         je operacionOR
         cmp byte[operacion], 'X'
@@ -148,12 +149,12 @@ aplicoOperacionLogica: ; Inicializo mi indice con el cual me voy a mover entre l
     operacionAND: ; Proceso operacion AND entre dos operandos y almaceno cada actualizacion de bytes en resParcial
         mov rdi, msjOpAND
         call puts
-        ; mov rsi, msjOperaciones
-        ; mov rdx, resParcial
-        ; mov rcx, [operacion]
-        ; mov r8, operando
-        ; sub rax, rax
-        ; call printf
+        mov rdi, msjOperaciones
+        mov rsi, resParcial
+        mov rdx, [operacion]
+        mov rcx, operando
+        sub rax, rax
+        call printf
         recorroCadenaAND:
             mov al, byte[indice]
             mov rcx, 16
@@ -165,8 +166,12 @@ aplicoOperacionLogica: ; Inicializo mi indice con el cual me voy a mover entre l
                 incrementoIndiceAND:
                 inc byte[indice]
                 loop sigOperandoAND
+                jmp mostrarResulParcial
 
-        insertoNuevoByteAND:
+        finOperacionAND:
+            ret
+
+            insertoNuevoByteAND:
             mov byte[es1], 'N'
             mov al, byte[indice]
             cmp byte[resParcial + rax], '1'
@@ -174,20 +179,17 @@ aplicoOperacionLogica: ; Inicializo mi indice con el cual me voy a mover entre l
             verificoNumeroAND:
             cmp byte[es1], 'S'
             je  agregoUnoBinarioAND ; A AND B = 1 SII A = 1 Y B = 1
-            call agregoCeroBinarioAND ; Si ambos opers no son 1, entonces agrego 0
-
-        finOperacionAND:
-            ret
+            jmp agregoCeroBinarioAND ; Si ambos opers no son 1, entonces agrego 0
 
     operacionOR: ; Proceso operacion OR entre dos operandos y almaceno cada actualizacion de bytes en resParcial
         mov rdi, msjOpOR
         call puts
-        ; mov rsi, msjOperaciones
-        ; mov rdx, resParcial
-        ; mov rcx, [operacion]
-        ; mov r8, operando
-        ; sub rax, rax
-        ; call printf
+        mov rdi, msjOperaciones
+        mov rsi, resParcial
+        mov rdx, [operacion]
+        mov rcx, operando
+        sub rax, rax
+        call printf
         recorroCadenaOR:
             mov al, byte[indice] 
             mov rcx, 16    
@@ -199,6 +201,10 @@ aplicoOperacionLogica: ; Inicializo mi indice con el cual me voy a mover entre l
                 incrementoIndiceOR:
                 inc byte[indice]
                 loop sigOperandoOR
+                jmp mostrarResulParcial
+    
+        finOperacionOR:
+        ret
 
         insertoNuevoByteOR:
             mov byte[es0], 'N'
@@ -208,20 +214,17 @@ aplicoOperacionLogica: ; Inicializo mi indice con el cual me voy a mover entre l
             verificoNumeroOR:
             cmp byte[es0], 'S'
             je  agregoCeroBinarioOR ; A OR B = 0 SII A = 0 Y B = 0
-            call agregoUnoBinarioOR ; Si ambos opers no son 0, entonces agrego 1
-    
-        finOperacionOR:
-        ret
+            jmp agregoUnoBinarioOR ; Si ambos opers no son 0, entonces agrego 1
 
     operacionXOR: ; Proceso operacion XOR entre dos operandos y almaceno cada actualizacion de bytes en resParcial
         mov rdi, msjOpXOR
         call puts
-        ; mov rdi, msjOperaciones
-        ; mov rsi, resParcial
-        ; mov rdx, [operacion]
-        ; mov rcx, operando
-        ; sub rax, rax
-        ; call printf
+        mov rdi, msjOperaciones
+        mov rsi, resParcial
+        mov rdx, [operacion]
+        mov rcx, operando
+        sub rax, rax
+        call printf
         recorroCadenaXOR:
             mov al, byte[indice] 
             mov rcx, 16
@@ -233,6 +236,7 @@ aplicoOperacionLogica: ; Inicializo mi indice con el cual me voy a mover entre l
                 incrementoIndiceXOR:
                 inc byte[indice]
                 loop sigOperandoXOR
+                jmp mostrarResulParcial
 
     finOperacionXOR:
         ret
@@ -245,7 +249,7 @@ aplicoOperacionLogica: ; Inicializo mi indice con el cual me voy a mover entre l
             verificoNumero1XOR:
             cmp byte[es1], 'S'
             je  agregoCeroBinarioXOR ; A AND B = 1 SII A = 1 Y B = 1
-            call agregoUnoBinarioXOR ; Si ambos opers no son 1, entonces agrego 1
+            jmp agregoUnoBinarioXOR ; Si ambos opers no son 1, entonces agrego 1
             
 
         insertoNuevoByteXORCero:
@@ -260,45 +264,33 @@ aplicoOperacionLogica: ; Inicializo mi indice con el cual me voy a mover entre l
             
 
     agregoCeroBinarioAND:
-        mov rdi, msjDebuggANDCero
-        call puts
         mov al, byte[indice]
         mov byte[resParcial + rax], '0'
         jmp incrementoIndiceAND
 
     agregoCeroBinarioOR:
-        mov rdi, msjDebuggORCero
-        call puts
         mov al, byte[indice]
         mov byte[resParcial + rax], '0'
         jmp incrementoIndiceOR
 
     agregoCeroBinarioXOR:
-        mov rdi, msjDebuggXORCero
-        call puts
         mov al, byte[indice]
         mov byte[resParcial + rax], '0'
         jmp incrementoIndiceXOR
 
     agregoUnoBinarioAND:
-        mov rdi, msjDebuggANDUno
-        call puts
         mov al, byte[indice]
         mov byte[resParcial + rax], '1'
         jmp incrementoIndiceAND
 
     
     agregoUnoBinarioOR:
-        mov rdi, msjDebuggORUno
-        call puts
         mov al, byte[indice]
         mov byte[resParcial + rax], '1'
         jmp incrementoIndiceOR
     
 
     agregoUnoBinarioXOR:
-        mov rdi, msjDebuggXORUno
-        call puts
         ; mov rdi, msjDebugg
         ; call puts ; en la primer iter entra aca porque tengo una X en el operando (17 bytes)
         mov al, byte[indice]
@@ -415,7 +407,7 @@ VALREG: ; Valido cada registro en base a su formato y tamaño
 
     setearOperacionValida:
 	    mov  byte[esOperValido], 'V'
-        jmp  revisarValidacionOperacion
+        jmp     finValidar
 
     setearOperandoInvalido:
 	    mov     byte[esCharValido], 'F'
@@ -423,3 +415,4 @@ VALREG: ; Valido cada registro en base a su formato y tamaño
 
     setearOperandoValido:
 	    mov  byte[esCharValido], 'V'
+        jmp     finValidar
