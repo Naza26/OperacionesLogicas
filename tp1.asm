@@ -25,8 +25,8 @@ section .data
     msjOpAND                db  "Procesando operacion AND...",0
     msjOpXOR                db  "Procesando operacion XOR...",0
     msjOpOR                 db  "Procesando operacion OR...",0
-    msjParcial			    db	"El resul parcial es: %s",10,0
-	msjOperaciones			db	"%s %c %s",10,0
+    msjParcial              db	"El resul parcial es: %s",10,0
+	msjOperaciones          db	"%s %c %s",10,0
 	
     ; Registro
     regLogicos      times 0 db ""
@@ -136,7 +136,6 @@ aplicoOperacionLogica: ; Inicializo mi indice con el cual me voy a mover entre l
                 loop sigOperandoAND
                 jmp mostrarResulParcial
 
-
             insertoNuevoByteAND:
             mov byte[es1], 'N'
             mov al, byte[indice]
@@ -167,12 +166,11 @@ aplicoOperacionLogica: ; Inicializo mi indice con el cual me voy a mover entre l
                 loop sigOperandoOR
                 jmp mostrarResulParcial
 
-
         insertoNuevoByteOR:
             mov byte[es0], 'N'
             mov al, byte[indice]
             cmp byte[resParcial + rax], '0'
-            je  agregoCeroBinarioOR ; A OR B = 0 SII A = 0 Y B = 0
+            je  agregoCeroBinarioOR
             jmp agregoUnoBinarioOR ; Si ambos opers no son 0, entonces agrego 1
 
     operacionXOR: ; Proceso operacion XOR entre dos operandos y almaceno cada actualizacion de bytes en resParcial
@@ -198,7 +196,6 @@ aplicoOperacionLogica: ; Inicializo mi indice con el cual me voy a mover entre l
                 loop sigOperandoXOR
                 jmp mostrarResulParcial
 
-
         insertoNuevoByteXORUno:
             mov byte[es1], 'N'
             mov al, byte[indice]
@@ -206,10 +203,9 @@ aplicoOperacionLogica: ; Inicializo mi indice con el cual me voy a mover entre l
             je  operXOREs1
             verificoNumero1XOR:
             cmp byte[es1], 'S'
-            je  agregoCeroBinarioXOR ; A AND B = 1 SII A = 1 Y B = 1
+            je  agregoCeroBinarioXOR
             jmp agregoUnoBinarioXOR ; Si ambos opers no son 1, entonces agrego 1
             
-
         insertoNuevoByteXORCero:
             mov byte[es0], 'N'
             mov al, byte[indice]
@@ -217,9 +213,8 @@ aplicoOperacionLogica: ; Inicializo mi indice con el cual me voy a mover entre l
             je  operXOREs0
             verificoNumero0XOR:
             cmp byte[es0], 'S'
-            je  agregoCeroBinarioXOR ; A AND B = 0 SII A = 0 Y B = 0
+            je  agregoCeroBinarioXOR
             call agregoUnoBinarioXOR ; Si ambos opers no son 0, entonces agrego 1
-            
 
     agregoCeroBinarioAND:
         mov al, byte[indice]
@@ -260,7 +255,6 @@ aplicoOperacionLogica: ; Inicializo mi indice con el cual me voy a mover entre l
     operXOREs0:
         mov byte[es0], 'S'
         jmp verificoNumero0XOR
-            
 
     mostrarResulParcial:
         mov     rdi, msjParcial
@@ -285,33 +279,33 @@ aplicoOperacionLogica: ; Inicializo mi indice con el cual me voy a mover entre l
 
 ; Subrutina de validacion
 
-VALREG: ; Valido cada registro en base a su formato y tamaño
+    VALREG: ; Valido cada registro en base a su formato y tamaño
         operandoValido:
-        mov rsi, 17 
-        recorrerCadenaOperando:
-            cmp byte[operando + rsi], 0
-            je  validarTamanio
-            dec rsi
-            jmp recorrerCadenaOperando
-        validarTamanio:
-            cmp rsi, 17
-            je  validarFormato
-            jmp setearOperandoInvalido
-        validarFormato:
-            mov rsi, 0
-            compararOperando:
-                cmp byte[operando + rsi], '1'
-                je operandValido
-                cmp byte[operando + rsi], '0'
-                je operandValido
+            mov rsi, 17 
+            recorrerCadenaOperando:
+                cmp byte[operando + rsi], 0
+                je  validarTamanio
+                dec rsi
+                jmp recorrerCadenaOperando
+            validarTamanio:
+                cmp rsi, 17
+                je  validarFormato
                 jmp setearOperandoInvalido
-            operandValido:
-                cmp rsi, 15
-                je  setearOperandoValido
-                inc rsi
-                jmp compararOperando
+            validarFormato:
+                mov rsi, 0
+                compararOperando:
+                    cmp byte[operando + rsi], '1'
+                    je operandValido
+                    cmp byte[operando + rsi], '0'
+                    je operandValido
+                    jmp setearOperandoInvalido
+                operandValido:
+                    cmp rsi, 15
+                    je  setearOperandoValido
+                    inc rsi
+                    jmp compararOperando
 
-     operacionValida:
+        operacionValida:
             mov rsi, 0
             recorrerCadenaOperacion:
                 cmp byte[operacion], 0
@@ -322,21 +316,23 @@ VALREG: ; Valido cada registro en base a su formato y tamaño
                 cmp rsi, 1
                 je  validarFormatoOp
                 jmp setearOperacionInvalido
-        validarFormatoOp:
-            compararOperacion:
-                cmp byte[operacion], 'N'
-                je setearOperacionValida
-                cmp byte[operacion], 'O'
-                je setearOperacionValida
-                cmp byte[operacion], 'X'
-                je setearOperacionValida
-                jmp setearOperacionInvalido
+            validarFormatoOp:
+                compararOperacion:
+                    cmp byte[operacion], 'N'
+                    je setearOperacionValida
+                    cmp byte[operacion], 'O'
+                    je setearOperacionValida
+                    cmp byte[operacion], 'X'
+                    je setearOperacionValida
+                    jmp setearOperacionInvalido
+
         finValidar:
-        ret
+            ret
+
     mostrarInvalido:
-            mov     rdi, msjErrorValidacion
-            call    puts
-            jmp     finPgm
+        mov     rdi, msjErrorValidacion
+        call    puts
+        jmp     finPgm
 
     setearOperacionInvalido:
 	    mov     byte[esOperValido], 'F'
