@@ -17,8 +17,6 @@ section .data
     msjErrorApertura        db  "Error en la apertura del archivo",10,0
     msjLecturaIniciada      db  "Leyendo archivo...",10,0
     msjLecturaFinalizada    db  "Se termino de leer el archivo",10,0
-    msjValidacionFormato    db  "Se esta validando el formato",10,0
-    msjValidacionTamanio    db  "Se esta validando el tamanio",10,0
     msjFinValidacion        db  "Se validaron los registros exitosamente",10,0
     msjErrorValidacion      db  "Hubo un error validando los registros",10,0
 
@@ -29,7 +27,6 @@ section .data
     msjOpOR                 db  "Procesando operacion OR...",0
     msjParcial			    db	"El resul parcial es: %s",10,0
 	msjOperaciones			db	"%s %c %s",10,0
-	msjFinal				db	"El resultado final es: %s",10,0
 	
     ; Registro
     regLogicos      times 0 db ""
@@ -37,46 +34,27 @@ section .data
         operacion   times 1 db " "
         ceroBin     db 0
 
-    msjContador     db  "El indice es: %hhi",10,0
-
-    msjCharOperacion db "Operacion: %s",10,0
-
-    msjCharOperando db "Operando: %s",10,0
-
-    msjAux  db "Resultado inicial cargado: %s",10,0
-
-    msjDebuggXORCero db "Estoy parada en XOR Cero",10,0
-    msjDebuggORCero db "Estoy parada en OR Cero",10,0
-    msjDebuggANDCero db "Estoy parada en AND Cero",10,0
-
-    msjDebuggXORUno db "Estoy parada en XOR Uno",10,0
-    msjDebuggORUno db "Estoy parada en OR Uno",10,0
-    msjDebuggANDUno db "Estoy parada en AND Uno",10,0
-
     ; Variable auxiliar para guardar resultado parcial
     resParcial  db "0000000000000000",0
 
-    numAux  db "0000000000000000"
-
 section .bss
     idArchivo       resq    1
-    operInicial     resb    16
     esCharValido    resb    1
     esOperValido    resb    1
     es1             resb    1
     es0             resb    1
     indice          resb    1
+
 section .text
 main:
     call    procesarArchivo
     call    abrirArchivo
-    jmp    leerArchivo
+    jmp     leerArchivo
 
     finPgm:
 	    ret
 
     abrirArchivo: ; Abro el archivo y valido que no haya errores en la apertura del mismo
-
         mov     rdi, nombreArchivo
         mov     rsi, modo
         call    fopen
@@ -92,19 +70,11 @@ main:
             call    puts
         leerRegistros: ; Leo cada registro, los valido y luego procedo a hacer las operaciones logicas
             mov     rdi, regLogicos
-            mov     rsi, 18 ; tuve que agregarle 2 bytes para que ande, por què?
+            mov     rsi, 18
             mov     rdx, [idArchivo]
             call    fgets
             cmp     rax, 0
             jle     cerrarArchivo
-            mov     rdi, msjCharOperando
-            mov     rsi, operando
-            sub     rax, rax
-            call printf
-            mov     rdi, msjCharOperacion
-            mov     rsi, operacion
-            sub     rax, rax
-            call printf
             call    VALREG
             revisarValidacionOperando:
                 cmp     byte[esCharValido], 'F'
@@ -117,8 +87,7 @@ main:
             sigoProcesando:
             mov     rdi, msjFinValidacion
             call    puts
-            call    aplicoOperacionLogica
-            jmp     mostrarResulParcial
+            jmp    aplicoOperacionLogica
             siguienteRegistro:
             jmp     leerRegistros
             mov     rdi, msjLecturaFinalizada
@@ -139,8 +108,6 @@ aplicoOperacionLogica: ; Inicializo mi indice con el cual me voy a mover entre l
         mov byte[indice], 0
         cmp byte[operacion], 'N'
         je operacionAND
-        mov rdi, msjLecturaFinalizada
-        call puts
         cmp byte[operacion], 'O'
         je operacionOR
         cmp byte[operacion], 'X'
@@ -159,26 +126,22 @@ aplicoOperacionLogica: ; Inicializo mi indice con el cual me voy a mover entre l
             mov al, byte[indice]
             mov rcx, 16
             sigOperandoAND:
+                mov al, byte[indice]
                 cmp byte[operando + rax], '1'
                 je insertoNuevoByteAND
                 cmp byte[operando + rax], '0'
-                je agregoCeroBinarioAND
+                je agregoCeroBinarioAND ; si ya me encontre un cero, inserto un cero
                 incrementoIndiceAND:
                 inc byte[indice]
                 loop sigOperandoAND
                 jmp mostrarResulParcial
 
-        finOperacionAND:
-            ret
 
             insertoNuevoByteAND:
             mov byte[es1], 'N'
             mov al, byte[indice]
-            cmp byte[resParcial + rax], '1'
-            je  operANDEs1
-            verificoNumeroAND:
-            cmp byte[es1], 'S'
-            je  agregoUnoBinarioAND ; A AND B = 1 SII A = 1 Y B = 1
+            cmp byte[resParcial + rax], '1' ; si la segunda cadena tambien tiene un uno, inserto un uno
+            je agregoUnoBinarioAND
             jmp agregoCeroBinarioAND ; Si ambos opers no son 1, entonces agrego 0
 
     operacionOR: ; Proceso operacion OR entre dos operandos y almaceno cada actualizacion de bytes en resParcial
@@ -194,25 +157,21 @@ aplicoOperacionLogica: ; Inicializo mi indice con el cual me voy a mover entre l
             mov al, byte[indice] 
             mov rcx, 16    
             sigOperandoOR:
+                mov al, byte[indice]
                 cmp byte[operando + rax], '1'
-                je insertoNuevoByteOR
-                cmp byte[operando + rax], '0'
                 je agregoUnoBinarioOR
+                cmp byte[operando + rax], '0'
+                je insertoNuevoByteOR
                 incrementoIndiceOR:
                 inc byte[indice]
                 loop sigOperandoOR
                 jmp mostrarResulParcial
-    
-        finOperacionOR:
-        ret
+
 
         insertoNuevoByteOR:
             mov byte[es0], 'N'
             mov al, byte[indice]
             cmp byte[resParcial + rax], '0'
-            je  operOREs0
-            verificoNumeroOR:
-            cmp byte[es0], 'S'
             je  agregoCeroBinarioOR ; A OR B = 0 SII A = 0 Y B = 0
             jmp agregoUnoBinarioOR ; Si ambos opers no son 0, entonces agrego 1
 
@@ -229,6 +188,7 @@ aplicoOperacionLogica: ; Inicializo mi indice con el cual me voy a mover entre l
             mov al, byte[indice] 
             mov rcx, 16
             sigOperandoXOR:
+                mov al, byte[indice]
                 cmp byte[operando + rax], '1'
                 je insertoNuevoByteXORUno
                 cmp byte[operando + rax], '0'
@@ -238,8 +198,6 @@ aplicoOperacionLogica: ; Inicializo mi indice con el cual me voy a mover entre l
                 loop sigOperandoXOR
                 jmp mostrarResulParcial
 
-    finOperacionXOR:
-        ret
 
         insertoNuevoByteXORUno:
             mov byte[es1], 'N'
@@ -291,19 +249,9 @@ aplicoOperacionLogica: ; Inicializo mi indice con el cual me voy a mover entre l
     
 
     agregoUnoBinarioXOR:
-        ; mov rdi, msjDebugg
-        ; call puts ; en la primer iter entra aca porque tengo una X en el operando (17 bytes)
         mov al, byte[indice]
         mov byte[resParcial + rax], '1'
         jmp incrementoIndiceXOR
-
-    operANDEs1:
-    mov byte[es1], 'S'
-    jmp verificoNumeroAND
-    
-    operOREs0:
-        mov byte[es0], 'S'
-        jmp verificoNumeroOR
 
     operXOREs1:
         mov byte[es1], 'S'
@@ -320,13 +268,6 @@ aplicoOperacionLogica: ; Inicializo mi indice con el cual me voy a mover entre l
         sub     rax, rax
         call    printf
         jmp siguienteRegistro
-
-    mostrarResulFinal:
-        mov     rdi, msjFinal
-        mov     rsi, [resParcial]
-        sub     rax, rax
-        call    printf
-        ret
 
     errorApertura:
         mov     rdi, msjErrorApertura
@@ -371,10 +312,6 @@ VALREG: ; Valido cada registro en base a su formato y tamaño
                 jmp compararOperando
 
      operacionValida:
-            ; mov rdi, msjCharOperacion
-            ; mov rsi, [operacion]
-            ; sub rax, rax
-            ; call printf
             mov rsi, 0
             recorrerCadenaOperacion:
                 cmp byte[operacion], 0
