@@ -137,11 +137,11 @@ aplicoOperacionLogica: ; Inicializo mi indice con el cual me voy a mover entre l
                 jmp mostrarResulParcial
 
             insertoNuevoByteAND:
-            mov byte[es1], 'N'
-            mov al, byte[indice]
-            cmp byte[resParcial + rax], '1' ; si la segunda cadena tambien tiene un uno, inserto un uno
-            je agregoUnoBinarioAND
-            jmp agregoCeroBinarioAND ; Si ambos opers no son 1, entonces agrego 0
+                mov byte[es1], 'N'
+                mov al, byte[indice]
+                cmp byte[resParcial + rax], '1' ; si la segunda cadena tambien tiene un uno, inserto un uno
+                je agregoUnoBinarioAND
+                jmp agregoCeroBinarioAND ; Si ambos opers no son 1, entonces agrego 0
 
     operacionOR: ; Proceso operacion OR entre dos operandos y almaceno cada actualizacion de bytes en resParcial
         mov rdi, msjOpOR
@@ -339,13 +339,13 @@ aplicoOperacionLogica: ; Inicializo mi indice con el cual me voy a mover entre l
         jmp     finValidar
 
     setearOperacionValida:
-	    mov     byte[esOperValido], 'V'
+        mov     byte[esOperValido], 'V'
         jmp     finValidar
 
     setearOperandoInvalido:
-	    mov     byte[esCharValido], 'F'
+        mov     byte[esCharValido], 'F'
         jmp     finValidar
 
     setearOperandoValido:
-	    mov     byte[esCharValido], 'V'
+        mov     byte[esCharValido], 'V'
         jmp     finValidar
