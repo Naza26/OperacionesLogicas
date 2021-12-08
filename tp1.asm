@@ -85,14 +85,14 @@ main:
                 je      mostrarInvalido
                 jmp     sigoProcesando
             sigoProcesando:
-            mov     rdi, msjFinValidacion
-            call    puts
-            jmp    aplicoOperacionLogica
+                mov     rdi, msjFinValidacion
+                call    puts
+                jmp    aplicoOperacionLogica
             siguienteRegistro:
-            jmp     leerRegistros
-            mov     rdi, msjLecturaFinalizada
-            call    puts
-            jmp     finPgm
+                jmp     leerRegistros
+                mov     rdi, msjLecturaFinalizada
+                call    puts
+                jmp     finPgm
 
     procesarArchivo: ; Pido operando inicial para empezar a ejecutar la logica del programa
        pidoOperInicial:
@@ -157,7 +157,7 @@ aplicoOperacionLogica: ; Inicializo mi indice con el cual me voy a mover entre l
             mov rcx, 16    
             sigOperandoOR:
                 mov al, byte[indice]
-                cmp byte[operando + rax], '1'
+                cmp byte[operando + rax], '1' ; si ya me encontre un uno, inserto un uno
                 je agregoUnoBinarioOR
                 cmp byte[operando + rax], '0'
                 je insertoNuevoByteOR
@@ -169,7 +169,7 @@ aplicoOperacionLogica: ; Inicializo mi indice con el cual me voy a mover entre l
         insertoNuevoByteOR:
             mov byte[es0], 'N'
             mov al, byte[indice]
-            cmp byte[resParcial + rax], '0'
+            cmp byte[resParcial + rax], '0' ; si la segunda cadena tambien tiene un cero, inserto un cero
             je  agregoCeroBinarioOR
             jmp agregoUnoBinarioOR ; Si ambos opers no son 0, entonces agrego 1
 
@@ -339,7 +339,7 @@ aplicoOperacionLogica: ; Inicializo mi indice con el cual me voy a mover entre l
         jmp     finValidar
 
     setearOperacionValida:
-	    mov  byte[esOperValido], 'V'
+	    mov     byte[esOperValido], 'V'
         jmp     finValidar
 
     setearOperandoInvalido:
@@ -347,5 +347,5 @@ aplicoOperacionLogica: ; Inicializo mi indice con el cual me voy a mover entre l
         jmp     finValidar
 
     setearOperandoValido:
-	    mov  byte[esCharValido], 'V'
+	    mov     byte[esCharValido], 'V'
         jmp     finValidar
